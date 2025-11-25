@@ -35,7 +35,7 @@ public class Enem_Shoot : MonoBehaviour
     bool FirstShoot;
 
     //Enums
-    public enum TypeList { Fire, Water, Nature, Electric, Ice }
+    public enum TypeList { Fire, Water, Nature, Electric, Ice, None }
 
 
     void Start()

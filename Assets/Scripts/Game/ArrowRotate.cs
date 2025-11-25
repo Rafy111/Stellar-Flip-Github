@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class ArrowRotate : MonoBehaviour
 {
+    public SpriteRenderer ArrowSpriteHolder;
+
     void FixedUpdate()
     {
         Vector2 dir = Input.mousePosition - Camera.main.WorldToScreenPoint(transform.position);

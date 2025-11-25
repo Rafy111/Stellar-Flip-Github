@@ -7,6 +7,7 @@ public class PlayerPinBall : MonoBehaviour
     [Header("Components")]
     public GameObject Indicator_Selected;
     public GameObject Indicator_Boost;
+    public GameObject Indicator_BoostLine;
 
     [Header("Others")]
     public PlayerManager PlayerManager;

@@ -41,13 +41,16 @@ public class PlayerManager : MonoBehaviour
     [Header("Hidden variables For Chaos")]
     public List<GameObject> List_ActiveChara;
     public List<GameObject> List_ActiveBoosterArrow;
+    public List<GameObject> List_ActiveBoosterLine;
     public List<GameObject> List_AllCharaHolder;
 
     //Others
+    AudioSource MusicManager;
     AudioSource SoundManager;
     GameManager GameManager;
     bool PlayerReleased;
     bool CanBoost;
+    bool IsBoosting;
     int CharaId;
     GameObject SelectIndicator;
     GameObject CurrentCharaHolder;
@@ -56,6 +59,7 @@ public class PlayerManager : MonoBehaviour
 
     void Start()
     {
+        MusicManager = GameObject.FindGameObjectWithTag("MusicManager").GetComponent<AudioSource>();
         SoundManager = GameObject.FindGameObjectWithTag("SoundManager").GetComponent<AudioSource>();
         GameManager = GetComponent<GameManager>();
 
@@ -88,12 +92,16 @@ public class PlayerManager : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && !GameManager.IsPause)
         {
-            if (PlayerReleased && CanBoost)
+            if (PlayerReleased && CanBoost && !GameManager.AlreadyGameOver)
             {
-                SoundManager.PlayOneShot(Sfx_Boost);
-                BoostCharacters();
+                IsBoosting = true;
+                foreach (var Arrow in List_ActiveBoosterArrow) Arrow.GetComponent<ArrowRotate>().ArrowSpriteHolder.enabled = false;
+                foreach (var Line in List_ActiveBoosterLine) Line.SetActive(true);
+
+                Time.timeScale = 0.25f;
+                MusicManager.pitch = 0.5f;
             }
             else if (!PlayerReleased)
             {
@@ -120,7 +128,22 @@ public class PlayerManager : MonoBehaviour
                 }
             }
         }
-        if (Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.LeftShift))
+        if (Input.GetMouseButtonUp(0) && !GameManager.IsPause)
+        {
+            if (IsBoosting && !GameManager.AlreadyGameOver)
+            {
+                IsBoosting = false;
+                foreach (var Arrow in List_ActiveBoosterArrow) Arrow.SetActive(false);
+                foreach (var Line in List_ActiveBoosterLine) Line.SetActive(false);
+
+                Time.timeScale = 1.0f;
+                MusicManager.pitch = 1.0f;
+
+                SoundManager.PlayOneShot(Sfx_Boost);
+                BoostCharacters();
+            }
+        }
+        if ((Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.LeftShift)) && !GameManager.IsPause)
         {
             if (List_Selected_Chara.Count > 1)
             {
@@ -170,17 +193,21 @@ public class PlayerManager : MonoBehaviour
         else List_ActiveChara = new List<GameObject> (List_Selected_Chara);
 
         List_ActiveBoosterArrow.Clear();
+        List_ActiveBoosterLine.Clear();
         int CharaTempId = 0;
         foreach (var Chara in List_ActiveChara)
         {
-            List_ActiveBoosterArrow.Add(List_ActiveChara[CharaTempId].transform.parent.GetComponent<PlayerPinBall>().Indicator_Boost);
+            PlayerPinBall PlHolderSc = List_ActiveChara[CharaTempId].transform.parent.GetComponent<PlayerPinBall>();
+            List_ActiveBoosterArrow.Add(PlHolderSc.Indicator_Boost);
+            List_ActiveBoosterLine.Add(PlHolderSc.Indicator_BoostLine);
             CharaTempId++;
         }
     }
 
     public void RemoveChar(GameObject CharaToDelete)
     {
-        List_Selected_Chara.RemoveAt(List_Selected_Chara.IndexOf(CharaToDelete));
+        int IdToDelete = List_Selected_Chara.IndexOf(CharaToDelete);
+        if (IdToDelete >= 0) List_Selected_Chara.RemoveAt(IdToDelete);
 
         if (List_Selected_Chara.Count > 0)
         {
@@ -197,7 +224,9 @@ public class PlayerManager : MonoBehaviour
             }
             else
             {
-                Destroy(CharaToDelete.transform.parent.gameObject);
+                GameObject HolderObject = CharaToDelete.transform.parent.gameObject;
+                List_AllCharaHolder.RemoveAt(List_AllCharaHolder.IndexOf(HolderObject));
+                Destroy(HolderObject);
 
                 if (CharaId > List_Selected_Chara.Count - 1) CharaId = 0;
 
@@ -236,6 +265,7 @@ public class PlayerManager : MonoBehaviour
         }
         CanBoost = false;
         foreach (var Arrow in List_ActiveBoosterArrow) Arrow.SetActive(false);
+        //foreach (var Line in List_ActiveBoosterLine) Line.SetActive(false);
         StartCoroutine(BoostReadyCooldown());
     }
 
@@ -244,9 +274,16 @@ public class PlayerManager : MonoBehaviour
     IEnumerator BoostReadyCooldown()
     {
         yield return new WaitForSeconds(BoostCooldown);
-        foreach (var ArrowBooster in List_ActiveBoosterArrow) ArrowBooster.SetActive(true);
+        if (!GameManager.AlreadyGameOver)
+        {
+            foreach (var ArrowBooster in List_ActiveBoosterArrow)
+            {
+                ArrowBooster.GetComponent<ArrowRotate>().ArrowSpriteHolder.enabled = true;
+                ArrowBooster.SetActive(true);
+            }
+        }
+        //foreach (var Line in List_ActiveBoosterLine) Line.SetActive(true);
         CanBoost = true;
-        foreach (var Arrow in List_ActiveBoosterArrow) Arrow.SetActive(true);
     }
 
     public void Chaos()
@@ -276,7 +313,15 @@ public class PlayerManager : MonoBehaviour
             ActivateChara();
         }
 
-        if (CanBoost) foreach (var Arrow in List_ActiveBoosterArrow) Arrow.SetActive(true);
+        if (CanBoost && !IsBoosting)
+        {
+            foreach (var Arrow in List_ActiveBoosterArrow)
+            {
+                Arrow.GetComponent<ArrowRotate>().ArrowSpriteHolder.enabled = true;
+                Arrow.SetActive(true);
+            }
+        }
+        if (IsBoosting) foreach (var Line in List_ActiveBoosterLine) Line.SetActive(true);
     }
 
     public void UnChaos()
@@ -299,5 +344,16 @@ public class PlayerManager : MonoBehaviour
             SelectedChara.SetActive(true);
         }
         ActivateChara();
+    }
+
+    public void WinTrigger()
+    {
+        IsBoosting = false;
+
+        Time.timeScale = 1.0f;
+        MusicManager.pitch = 1.0f;
+
+        foreach (var Arrow in List_ActiveBoosterArrow) Arrow.SetActive(false);
+        foreach (var Line in List_ActiveBoosterLine) Line.SetActive(false);
     }
 }

@@ -14,9 +14,13 @@ public class TransitionScene : MonoBehaviour
     [Header("Play SFX When Changing UI")]
     public AudioClip Sfx_ToPlay;
 
+    [Header("Change World")]
+    public bool ChangeWorldSc = false;
+
     //Others
     AudioSource MusicManager;
     AudioSource SoundManager;
+    WorldSelector WorldSelector;
     float alpha = 1;
 
 
@@ -25,7 +29,7 @@ public class TransitionScene : MonoBehaviour
         Canvas.GetComponent<CanvasGroup>().alpha = 1;
         MusicManager = GameObject.FindGameObjectWithTag("MusicManager").GetComponent<AudioSource>();
         SoundManager = GameObject.FindGameObjectWithTag("SoundManager").GetComponent<AudioSource>();
-
+        if (ChangeWorldSc) WorldSelector = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<WorldSelector>();
         StartCoroutine(FadeIn());
     }
 
@@ -123,6 +127,41 @@ public class TransitionScene : MonoBehaviour
         if (CurrentUi != null) CurrentUi.SetActive(false);
         CurrentUi = NewUi;
         CurrentUi.SetActive(true);
+
+        // Fade In
+        while (alpha > 0)
+        {
+            float WaitTime = Time.deltaTime;
+            yield return new WaitForSeconds(WaitTime);
+            alpha -= ChangeSpeed * WaitTime;
+            Canvas.GetComponent<CanvasGroup>().alpha = alpha;
+        }
+        Canvas.SetActive(false);
+        yield return null;
+    }
+
+
+
+    // Change World
+    public void StartChangeWorld(int WorldId)
+    {
+        StartCoroutine(ChangingWorld(WorldId));
+    }
+
+    IEnumerator ChangingWorld(int WorldId)
+    {
+        // Fade Out
+        Canvas.SetActive(true);
+        while (alpha < 1)
+        {
+            float WaitTime = Time.deltaTime;
+            yield return new WaitForSeconds(WaitTime);
+            alpha += ChangeSpeed * WaitTime;
+            Canvas.GetComponent<CanvasGroup>().alpha = alpha;
+        }
+
+        // Change World
+        WorldSelector.ChangeWorld(WorldId);
 
         // Fade In
         while (alpha > 0)

@@ -22,26 +22,41 @@ public class Sc_Enem : MonoBehaviour
     [Header("Other")]
     public SpriteRenderer EnemBody;
     public int AddScore;
+    public bool CountedTowardsDeath = true;
 
     [Header("Sound Effects")]
+    public AudioClip Sfx_Spawn;
     //public AudioClip Sfx_Hurt;
     public AudioClip Sfx_Dead;
+
+    [Header("Prefabs")]
+    public GameObject Obj_Spawn;
+    public GameObject HitEffect;
 
     //Others
     ElementsHolder ElementsHolder;
     GameManager GameManager;
+    LevelManager LevelManager;
     AudioSource SoundManager;
     int Hp;
 
     //Enums
-    public enum TypeList { Fire, Water, Nature, Electric, Ice }
+    public enum TypeList { Fire, Water, Nature, Electric, Ice, None }
 
+
+    void OnEnable()
+    {
+        if (SoundManager == null) SoundManager = GameObject.FindGameObjectWithTag("SoundManager").GetComponent<AudioSource>();
+        SoundManager.PlayOneShot(Sfx_Spawn);
+        Instantiate(Obj_Spawn, transform.position, Quaternion.identity);
+    }
 
     void Start()
     {
-        ElementsHolder = GameObject.FindGameObjectWithTag("CommonData").GetComponent<ElementsHolder>();
-        GameManager = GameObject.FindGameObjectWithTag("CommonData").GetComponent<GameManager>();
-        SoundManager = GameObject.FindGameObjectWithTag("SoundManager").GetComponent<AudioSource>();
+        GameObject CommonData = GameObject.FindGameObjectWithTag("CommonData");
+        ElementsHolder = CommonData.GetComponent<ElementsHolder>();
+        GameManager = CommonData.GetComponent<GameManager>();
+        LevelManager = CommonData.GetComponent<LevelManager>();
 
         Hp = MaxHp;
         HpBar.maxValue = MaxHp;
@@ -62,14 +77,25 @@ public class Sc_Enem : MonoBehaviour
 
     public void Damaged(int Damage, string DamageType)
     {
-        float DamageFloat = Damage * ElementsHolder.WeakOrStrong(Type.ToString(), DamageType);
+        float DamageMultiplier = ElementsHolder.WeakOrStrong(Type.ToString(), DamageType);
+        float DamageFloat = Damage * DamageMultiplier;
         Hp -= (int)DamageFloat;
+
+        GameObject HitObj = Instantiate(HitEffect, transform.position, Quaternion.identity);
+        EnemyHitEffect HitObjSc = HitObj.GetComponent<EnemyHitEffect>();
+        switch (DamageMultiplier)
+        {
+            case 0.5f: HitObjSc.Weak.SetActive(true); break;
+            case 1: HitObjSc.Normal.SetActive(true); break;
+            case 1.5f: HitObjSc.Strong.SetActive(true); break;
+        }
 
         if (Hp <= 0)
         {
             SoundManager.PlayOneShot(Sfx_Dead);
-            GameManager.AddTempScore(ScoreDeath);
-            GameManager.EnemyDefeated();
+            float ScoreFloat = ScoreDeath * DamageMultiplier;
+            GameManager.AddTempScore((int)ScoreFloat);
+            if (CountedTowardsDeath) LevelManager.EnemyDefeated();
 
             GetComponent<Collider2D>().enabled = false;
             if (HasShoot) GetComponent<Enem_Shoot>().enabled = false;
@@ -86,7 +112,8 @@ public class Sc_Enem : MonoBehaviour
         else
         {
             //SoundManager.PlayOneShot(Sfx_Hurt);
-            GameManager.AddTempScore(ScoreHit);
+            float ScoreFloat = ScoreHit * DamageMultiplier;
+            GameManager.AddTempScore((int)ScoreFloat);
             SetHpBarValue();
         }
     }
@@ -94,5 +121,12 @@ public class Sc_Enem : MonoBehaviour
     void SetHpBarValue()
     {
         HpBar.value = Hp;
+    }
+
+    public void Heal(int Ammount)
+    {
+        Hp += Ammount;
+        if (Hp > MaxHp) Hp = MaxHp;
+        SetHpBarValue();
     }
 }

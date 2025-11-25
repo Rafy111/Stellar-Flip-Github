@@ -14,7 +14,7 @@ public class Sc_DamageToPlayer : MonoBehaviour
     public string TypeFix;
 
     //Enums
-    public enum TypeList { Fire, Water, Nature, Electric, Ice }
+    public enum TypeList { Fire, Water, Nature, Electric, Ice, None }
 
 
     void Start()

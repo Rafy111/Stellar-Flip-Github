@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
@@ -31,12 +32,16 @@ public class GameManager : MonoBehaviour
     public Rigidbody2D LeftFlipper;
     public Rigidbody2D RightFlipper;
 
+    [Header("Infos")]
+    public GameObject InfoKeybind;
+    public GameObject InfoElements;
+
+    [Header("Overlay")]
+    public GameObject PauseMenu;
+
     [Header("Musics")]
     public AudioClip Mus_Gameplay;
     public AudioClip Mus_GameplayChaos;
-
-    [Header("Level Stuff")]
-    public TMP_Text Text_EnemiesLeft;
 
     [Header("GameOverScreen")]
     public GameObject GameOverScreen;
@@ -45,6 +50,9 @@ public class GameManager : MonoBehaviour
     public GameObject NextLevel;
     public float GameOverTransitionTime;
 
+    [Header("Hidden Stuff")]
+    public bool AlreadyGameOver;
+    public bool IsPause;
 
     //Others
     AudioSource MusicManager;
@@ -58,10 +66,8 @@ public class GameManager : MonoBehaviour
     int ComboMultiplier = 1;
     int MultiCounter = 10;
     int ChaosCounter;
-    int EnemiesAmmount;
 
     // Game Over Screen
-    bool AlreadyGameOver;
     bool GameOverShowingUpdate;
     float GameOverCharger;
 
@@ -72,25 +78,25 @@ public class GameManager : MonoBehaviour
         SoundManager = GameObject.FindGameObjectWithTag("SoundManager").GetComponent<AudioSource>();
         PlayerManager = GetComponent<PlayerManager>();
         SkillProcessor = GetComponent<SkillProcessor>();
+
+        if (PlayerPrefs.GetInt("UiKeybinds") == 0) InfoKeybind.SetActive(false);
+        if (PlayerPrefs.GetInt("UiElements") == 0) InfoElements.SetActive(false);
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            SoundManager.PlayOneShot(Sfx_FlipSound);
-            LeftFlipper.AddTorque(FlipperForce);
-        }
-        if (Input.GetKeyDown(KeyCode.D))
-        {
-            SoundManager.PlayOneShot(Sfx_FlipSound);
-            RightFlipper.AddTorque(-FlipperForce);
-        }
+        if ((Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.D)) && !IsPause) SoundManager.PlayOneShot(Sfx_FlipSound);
+        if (Input.GetKey(KeyCode.A) && !IsPause) LeftFlipper.AddTorque(FlipperForce * 9 * Time.deltaTime);
+        if (Input.GetKey(KeyCode.D) && !IsPause) RightFlipper.AddTorque(-FlipperForce * 9 * Time.deltaTime);
         if (Input.GetKeyDown(KeyCode.Escape) && !AlreadyGameOver)
         {
+            TogglePause();
+
+            /*
             AlreadyGameOver = true;
             GameObject.FindGameObjectWithTag("MainCamera").GetComponent<TransitionScene>().StartMusicFadeout();
             GameObject.FindGameObjectWithTag("MainCamera").GetComponent<TransitionScene>().StartFadeOut("MainMenu");
+            */
         }
 
         if (GameOverShowingUpdate && GameOverCharger < GameOverTransitionTime - 0.2f)
@@ -156,11 +162,14 @@ public class GameManager : MonoBehaviour
 
     public void AddChaosCountFromSkill(int Ammount)
     {
-        float ToAddChaos =  CountUntilChaos * (float)Ammount / 100;
-        ChaosCounter += Mathf.RoundToInt(ToAddChaos);
-        if (ChaosCounter > CountUntilChaos) ChaosCounter = CountUntilChaos;
-        ChaosBar.fillAmount = (float)ChaosCounter / CountUntilChaos;
-        ChaosProcess();
+        if (!IsChaos)
+        {
+            float ToAddChaos = CountUntilChaos * (float)Ammount / 100;
+            ChaosCounter += Mathf.RoundToInt(ToAddChaos);
+            if (ChaosCounter > CountUntilChaos) ChaosCounter = CountUntilChaos;
+            ChaosBar.fillAmount = (float)ChaosCounter / CountUntilChaos;
+            ChaosProcess();
+        }
     }
 
     public void AddChaosCount()
@@ -213,23 +222,12 @@ public class GameManager : MonoBehaviour
         ChaosBar.fillAmount = 0;
     }
 
-    public void SetLevelInfo(int EnemiesCount)
-    {
-        EnemiesAmmount = EnemiesCount;
-        Text_EnemiesLeft.text = "Enemies Left: " + EnemiesAmmount.ToString();
-    }
-
-    public void EnemyDefeated()
-    {
-        EnemiesAmmount--;
-        Text_EnemiesLeft.text = "Enemies Left: " + EnemiesAmmount.ToString();
-        if (EnemiesAmmount <= 0) StartShowingGameOverScreen(true);
-    }
-
     public void StartShowingGameOverScreen(bool Win)
     {
         if (AlreadyGameOver) return;
         AlreadyGameOver = true;
+
+        PlayerManager.WinTrigger();
 
         Text_GameOverCondition.text = Win ? "You Win!" : "You Lose...";
         Text_GameOverScore.text = "Score: " + Score.ToString("D6");
@@ -238,9 +236,10 @@ public class GameManager : MonoBehaviour
 
         if (Win)
         {
+            int CurrentWorldId = PlayerPrefs.GetInt("WorldId");
             int CurrentLevelId = PlayerPrefs.GetInt("LevelId");
-            if (PlayerPrefs.GetInt("HighscoreLv" + CurrentLevelId) < Score) PlayerPrefs.SetInt("HighscoreLv" + CurrentLevelId, Score);
-            if (PlayerPrefs.GetInt("LastUnlockedLevel") < CurrentLevelId + 1) PlayerPrefs.SetInt("LastUnlockedLevel", CurrentLevelId + 1);
+            if (PlayerPrefs.GetInt(CurrentWorldId + "_HighscoreLv" + CurrentLevelId) < Score) PlayerPrefs.SetInt(CurrentWorldId + "_HighscoreLv" + CurrentLevelId, Score);
+            if (PlayerPrefs.GetInt(CurrentWorldId + "_LastUnlockedLevel") < CurrentLevelId + 1) PlayerPrefs.SetInt(CurrentWorldId + "_LastUnlockedLevel", CurrentLevelId + 1);
         }
     }
 
@@ -253,5 +252,18 @@ public class GameManager : MonoBehaviour
     {
         int NextLevel = PlayerPrefs.GetInt("LevelId") + 1;
         PlayerPrefs.SetInt("LevelId", NextLevel);
+    }
+
+    public void TogglePause()
+    {
+        EventSystem.current.SetSelectedGameObject(null);
+
+        if (!AlreadyGameOver)
+        {
+            IsPause = !IsPause;
+
+            PauseMenu.SetActive(IsPause);
+            Time.timeScale = IsPause ? 0 : 1;
+        }
     }
 }

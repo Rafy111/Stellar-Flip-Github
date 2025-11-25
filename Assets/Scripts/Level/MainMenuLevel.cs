@@ -5,6 +5,10 @@ using UnityEngine.UI;
 
 public class MainMenuLevel : MonoBehaviour
 {
+    [Header("Component")]
+    public int WorldId;
+    public bool Progressive = true;
+
     [Header("List")]
     public List<Button> List_Levels;
     public List<TMP_Text> List_Highscore;
@@ -12,7 +16,7 @@ public class MainMenuLevel : MonoBehaviour
 
     void Start()
     {
-        if (!PlayerPrefs.HasKey("LastUnlockedLevel")) PlayerPrefs.SetInt("LastUnlockedLevel", 1);
+        if (Progressive && !PlayerPrefs.HasKey(WorldId + "_LastUnlockedLevel")) PlayerPrefs.SetInt(WorldId + "_LastUnlockedLevel", 1);
         SetLevelInfo();
     }
 
@@ -23,18 +27,30 @@ public class MainMenuLevel : MonoBehaviour
 
     public void SetLevelInfo()
     {
-        int UnlockedId = PlayerPrefs.GetInt("LastUnlockedLevel");
+        int UnlockedId = PlayerPrefs.GetInt(WorldId + "_LastUnlockedLevel");
 
         for (int i = 1; i <= List_Levels.Count; i++)
         {
-            if (i <= UnlockedId)
+            if (Progressive)
             {
-                List_Levels[i - 1].interactable = true;
-                if (PlayerPrefs.GetInt("HighscoreLv" + i) > 0)
+                if (i <= UnlockedId)
+                {
+                    List_Levels[i - 1].interactable = true;
+                    if (PlayerPrefs.GetInt(WorldId + "_HighscoreLv" + i) > 0)
+                    {
+                        TMP_Text CurrentHighscore = List_Highscore[i - 1];
+                        CurrentHighscore.gameObject.SetActive(true);
+                        CurrentHighscore.text = PlayerPrefs.GetInt(WorldId + "_HighscoreLv" + i).ToString("D6");
+                    }
+                }
+            }
+            else
+            {
+                if (PlayerPrefs.GetInt(WorldId + "_HighscoreLv" + i) > 0)
                 {
                     TMP_Text CurrentHighscore = List_Highscore[i - 1];
                     CurrentHighscore.gameObject.SetActive(true);
-                    CurrentHighscore.text = PlayerPrefs.GetInt("HighscoreLv" + i).ToString("D6");
+                    CurrentHighscore.text = PlayerPrefs.GetInt(WorldId + "_HighscoreLv" + i).ToString("D6");
                 }
             }
         }

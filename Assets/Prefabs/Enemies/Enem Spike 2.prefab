@@ -538,7 +538,7 @@ Canvas:
   m_VertexColorAlwaysGammaSpace: 1
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
-  m_SortingLayerID: 0
+  m_SortingLayerID: -48451367
   m_SortingOrder: 0
   m_TargetDisplay: 0
 --- !u!114 &1282538269665336631
@@ -703,7 +703,10 @@ MonoBehaviour:
   HasEliteAttacks: 0
   EnemBody: {fileID: 7764932591372205882}
   AddScore: 0
+  Sfx_Spawn: {fileID: 8300000, guid: a57098297ba0ad043b4967409b44cf11, type: 3}
   Sfx_Dead: {fileID: 8300000, guid: a57098297ba0ad043b4967409b44cf11, type: 3}
+  Obj_Spawn: {fileID: 3369251413017618362, guid: 5cfd508a869870c46a211347b42472f1, type: 3}
+  HitEffect: {fileID: 7490434480624533229, guid: 1a453928434067e4f87abd9d6dbb8d3d, type: 3}
 --- !u!114 &6343938448206296853
 MonoBehaviour:
   m_ObjectHideFlags: 0

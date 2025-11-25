@@ -1,11 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class MasterVolumeManager : MonoBehaviour
 {
-    [SerializeField] Slider masterSlider;
+    [SerializeField] Slider Slider;
+    [SerializeField] TMP_Text Percent;
 
     void Start()
     {
@@ -24,18 +24,26 @@ public class MasterVolumeManager : MonoBehaviour
     // Master Volume
     public void ChangeMasterVolume()
     {
-        GameObject.FindGameObjectWithTag("MusicManager").GetComponent<AudioSource>().volume = PlayerPrefs.GetFloat("musicVolume") * masterSlider.value;
-        GameObject.FindGameObjectWithTag("SoundManager").GetComponent<AudioSource>().volume = PlayerPrefs.GetFloat("soundVolume") * masterSlider.value;
+        GameObject.FindGameObjectWithTag("MusicManager").GetComponent<AudioSource>().volume = PlayerPrefs.GetFloat("musicVolume") * Slider.value;
+        GameObject.FindGameObjectWithTag("SoundManager").GetComponent<AudioSource>().volume = PlayerPrefs.GetFloat("soundVolume") * Slider.value;
         SaveMasterVolume();
     }
 
     private void SaveMasterVolume()
     {
-        PlayerPrefs.SetFloat("masterVolume", masterSlider.value);
+        PlayerPrefs.SetFloat("masterVolume", Slider.value);
+        SetPercentage();
     }
 
     private void LoadMasterVolume()
     {
-        masterSlider.value = PlayerPrefs.GetFloat("masterVolume");
+        Slider.value = PlayerPrefs.GetFloat("masterVolume");
+        SetPercentage();
+    }
+
+    void SetPercentage()
+    {
+        float Percentage = Slider.value * 100;
+        Percent.text = (int)Percentage + "%";
     }
 }

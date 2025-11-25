@@ -1,11 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class MusicManager : MonoBehaviour
 {
-    [SerializeField] Slider volumeSlider;
+    [SerializeField] Slider Slider;
+    [SerializeField] TMP_Text Percent;
 
     void Start()
     {
@@ -25,17 +25,25 @@ public class MusicManager : MonoBehaviour
     // Music Volume
     public void ChangeMusicVolume()
     {
-        GameObject.FindGameObjectWithTag("MusicManager").GetComponent<AudioSource>().volume = volumeSlider.value * PlayerPrefs.GetFloat("masterVolume");
+        GameObject.FindGameObjectWithTag("MusicManager").GetComponent<AudioSource>().volume = Slider.value * PlayerPrefs.GetFloat("masterVolume");
         SaveMusicVolume();
     }
 
     private void SaveMusicVolume()
     {
-        PlayerPrefs.SetFloat("musicVolume", volumeSlider.value);
+        PlayerPrefs.SetFloat("musicVolume", Slider.value);
+        SetPercentage();
     }
 
     private void LoadMusicVolume()
     {
-        volumeSlider.value = PlayerPrefs.GetFloat("musicVolume");
+        Slider.value = PlayerPrefs.GetFloat("musicVolume");
+        SetPercentage();
+    }
+
+    void SetPercentage()
+    {
+        float Percentage = Slider.value * 100;
+        Percent.text = (int)Percentage + "%";
     }
 }
